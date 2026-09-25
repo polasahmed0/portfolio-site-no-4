@@ -706,7 +706,11 @@ body > .main-nav {
   </div>
 
   <form class="contact-form" id="contactForm">
+    <input type="hidden" name="access_key" value="e51eee01-c929-455f-961e-eecd1e3cf239">
+    <input type="hidden" name="subject" value="New message from polasahmed.com">
+    <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
     <div class="field">
+        
       <input type="text" id="name" name="name" placeholder="Your name" required>
     </div>
     <div class="field">
@@ -715,8 +719,9 @@ body > .main-nav {
     <div class="field">
       <textarea id="message" name="message" placeholder="Tell me about the role" required></textarea>
     </div>
-    <button type="submit" class="btn btn-primary">Send message</button>
-    <p class="form-note">Opens your email client with the message pre-filled, addressed to hello@polasahmed.com.</p>
+    <button type="submit" class="btn btn-primary" id="submitBtn">Send message</button>
+    <p class="form-note" id="formStatus">Submissions go straight to hello@polasahmed.com.</p>
+      
   </form>
 </main>
 
@@ -785,14 +790,41 @@ body > .main-nav {
     });
   });
 
-  document.getElementById('contactForm').addEventListener('submit', function(e){
+  const form = document.getElementById('contactForm');
+  const status = document.getElementById('formStatus');
+  const submitBtn = document.getElementById('submitBtn');
+  const defaultStatusText = status.textContent;
+
+  form.addEventListener('submit', async function(e){
     e.preventDefault();
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const message = document.getElementById('message').value;
-    const subject = encodeURIComponent('Job Inquiry from ' + name);
-    const body = encodeURIComponent('Name: ' + name + '\nEmail: ' + email + '\n\n' + message);
-    window.location.href = 'mailto:hello@polasahmed.com?subject=' + subject + '&body=' + body;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Sending...';
+    status.textContent = defaultStatusText;
+    status.style.color = '';
+
+    try {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        submitBtn.textContent = 'Send message';
+        submitBtn.disabled = false;
+        status.textContent = 'Message sent — thanks! I\'ll reply within 24 hours.';
+        status.style.color = '#16A34A';
+        form.reset();
+      } else {
+        throw new Error(result.message || 'Submission failed');
+      }
+    } catch (err) {
+      submitBtn.textContent = 'Send message';
+      submitBtn.disabled = false;
+      status.textContent = 'Something went wrong — please email hello@polasahmed.com directly.';
+      status.style.color = '#DC2626';
+    }
   });
 </script>
 
